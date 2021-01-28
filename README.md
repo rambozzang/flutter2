@@ -7,6 +7,7 @@
 # Getx 함수 비교 
 Obx vs. GetBuilder vs. GetX
 
+<pre><code>
 class Log2Page extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -52,7 +53,7 @@ class Controller extends GetxController {
   void change() => log2.value++;
 }
 
-
+</code></pre>
 
 Obx
 Listens to observable (obs) changes. Controller needs to already be declared/initialized elsewhere to use.
