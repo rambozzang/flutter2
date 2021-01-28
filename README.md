@@ -4,7 +4,7 @@
 
 
 
-#Getx 함수 비교 
+# Getx 함수 비교 
 Obx vs. GetBuilder vs. GetX
 
 class Log2Page extends StatelessWidget {
