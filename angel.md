@@ -9,7 +9,7 @@ Req핸들러는 모든 Dart 객체를 반활 할 수 있습니다(처리방법�
 
 *    ResponseContext - Header 전송, 데이티 쓰기 등을 client로 전송 할수 있습니다. Response 이 핸들러에 의해 수정되는 것을 방지 하려면  Res.end() 를 호출 하여 추가 쓰기를 방지하세요.
 
-## Return Valuse
+### Return Valuse
 
 Req 핸들러는 모든 Dart 값을 반환 할 수 있습니다. 반환 값은 다음과 같이 처리됩니다.
 
@@ -38,11 +38,11 @@ Angel은 DI에 컨테이너 계층 구조를 사용합니다. 종속성 주입�
 Adding a Singleton
 ```dart
 Future<void> myPlugin(Angel app) async {
-app.container.registerSingleton(SomeClass("foo"));
-app.container.registerSingleton<SomeAbstractClass>(MyImplClass());
-app.container.registerFactory((_) => SomeClass("foo"));
-app.container.registerLazySingleton((_) => SomeOtherClass());
-app.container.registerNamedSingleton('yes', Yes());
+  app.container.registerSingleton(SomeClass("foo"));
+  app.container.registerSingleton<SomeAbstractClass>(MyImplClass());
+  app.container.registerFactory((_) => SomeClass("foo"));
+  app.container.registerLazySingleton((_) => SomeOtherClass());
+  app.container.registerNamedSingleton('yes', Yes());
 }
 ```
 
@@ -69,11 +69,73 @@ app.post("/foo", ioc((SomeClass singleton, {Foo optionalInjection}));
 @Expose("/my/controller")
 class MyController extends Controller {
 
-@Expose("/bar")
-// Inject classes from container, request parameters or the request/response context :)
-bar(SomeClass singleton, RequestContext req) => "${singleton.text} bar"; // Always "foo bar"
+  @Expose("/bar")
+  // Inject classes from container, request parameters or the request/response context :)
+  bar(SomeClass singleton, RequestContext req) => "${singleton.text} bar"; // Always "foo bar"
 
-@Expose("/baz")
-baz({Foo optionalInjection});
+  @Expose("/baz")
+  baz({Foo optionalInjection});
 }
 ```
+
+상상할 수 있듯이 이것은 데이터베이스 연결과 같은 것을 관리하는 데 매우 유용합니다.
+```dart
+configureServer(Angel app) async {
+  var db = Db("mongodb://localhost:27017/db");
+  await db.open();
+  app.container.registerSingleton(db);
+}
+
+@Expose("/users")
+class ApiController extends Controller {
+  @Expose("/:id")
+  fetchUser(String id, Db db) => db.collection("users").findOne(where.id(ObjectId.fromHexString(id)));
+}
+```
+
+## Dependency-Injected Controllers
+
+컨트롤러에는 추가 구성없이 삽입 된 종속성이 있습니다. 그러나 컨트롤러의 생성자에 종속성을 주입 할 수 있습니다.
+```dart
+@Expose('/controller')
+class MyController {
+  final AngelAuth auth;
+  final Db db;
+
+  MyController(this.auth, this.db);
+
+  @Expose('/login')
+  login() => auth.authenticate('local');
+}
+
+main() async {
+  // At some point in your application, register necessary dependencies as singletons...
+  app.container.registerSingleton(auth);
+  app.container.registerSingleton(db);
+
+  // Create the controller with injected dependencies
+  await app.mountController<MyController>();
+}
+```
+
+## Enabling dart:mirrors or other Reflection
+
+기본적으로 Angel은 EmptyReflector ()를 사용하여 dart : mirrors를 지원하지 않는 컨테이너 인스턴스에 전원을 공급하므로 Dart 리플렉션을 사용할 수없는 컨텍스트에서 사용할 수 있습니다.
+그러나 다른 Reflector를 사용하면 Angel의 DI 시스템의 모든 기능을 사용할 수 있습니다. angel init 프로젝트는 기본적으로 MirrorsReflector ()를 사용합니다.
+애플리케이션이 주석 또는 반사에 의존하는 모든 종류의 기능을 사용하는 경우 MirrorsReflector를 포함하거나 정적 반사기 변형을 사용하십시오.
+다음 사용 사례에는 반영이 필요합니다.
+ * @Expose () 또는 @ExposeWS ()를 통한 컨트롤러 사용
+ * 컨트롤러에서든 일반 컨테이너에서든 생성자에 종속성 주입 사용
+ * 모든 경로에서 ioc 기능 사용
+
+package : angel_container / mirrors.dart의 MirrorsReflector는 지금까지 가장 편리한 패턴이므로 가능하면 사용하십시오.
+ * Generation via package:angel_container_generator
+ * StaticReflector 인스턴스 만들기
+ * Reflector 인터페이스를 수동으로 구현 (성가 시며 권장하지 않음)
+ 
+ 
+Basic Routing
+그러나 다음과 같은 대안이 있습니다.
+
+
+
